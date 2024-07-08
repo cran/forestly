@@ -4,14 +4,24 @@
 \alias{ae_forestly}
 \title{Display interactive forest plot}
 \usage{
-ae_forestly(outdata, filter = c("prop", "n"), width = 1400)
+ae_forestly(
+  outdata,
+  display_soc_toggle = TRUE,
+  filter = c("prop", "n"),
+  width = 1400,
+  max_page = NULL
+)
 }
 \arguments{
 \item{outdata}{An \code{outdata} object created by \code{\link[=format_ae_forestly]{format_ae_forestly()}}.}
 
+\item{display_soc_toggle}{A boolean value to display SOC toggle button.}
+
 \item{filter}{A character value of the filter variable.}
 
 \item{width}{A numeric value of width of the table in pixels.}
+
+\item{max_page}{A numeric value of max page number shown in the table.}
 }
 \value{
 An AE forest plot saved as a \code{shiny.tag.list} object.
@@ -26,10 +36,8 @@ if (interactive()) {
   meta_forestly(
     dataset_adsl = adsl,
     dataset_adae = adae,
-    population_term = "apat",
-    observation_term = "wk12"
   ) |>
-    prepare_ae_forestly(parameter = "any;rel") |>
+    prepare_ae_forestly() |>
     format_ae_forestly() |>
     ae_forestly()
 }

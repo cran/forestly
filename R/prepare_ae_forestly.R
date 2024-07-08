@@ -21,6 +21,8 @@
 #' @inheritParams metalite.ae::prepare_ae_specific
 #' @param ae_listing_display A vector of name of variables used to display
 #'   on AE listing table.
+#' @param ae_listing_unique A logical value to display only unique records
+#'   on AE listing table.
 #'
 #' @return An `outdata` object.
 #'
@@ -31,22 +33,22 @@
 #' adae <- forestly_adae[1:100,]
 #' meta_forestly(
 #'   dataset_adsl = adsl,
-#'   dataset_adae = adae,
-#'   population_term = "apat",
-#'   observation_term = "wk12"
+#'   dataset_adae = adae
 #' ) |>
-#'   prepare_ae_forestly(parameter = "any;rel")
+#'   prepare_ae_forestly()
 prepare_ae_forestly <- function(
     meta,
     population = NULL,
     observation = NULL,
-    parameter,
+    parameter = NULL,
+    components = "par",
     reference_group = NULL,
     ae_listing_display = c(
-      "SEX", "RACE", "AGE", "ASTDY", "AESEV", "AESER",
-      "AEREL", "AEACN", "AEOUT", "SITEID", "ADURN", "ADURU"
-    )) {
-  parameters <- unlist(strsplit(parameter, ";"))
+      "USUBJID", "SITEID", "SEX", "RACE", "AGE", "ASTDY", "AESER",
+      "AEREL", "AEACN", "AEOUT", "ADURN", "ADURU"
+    ),
+    ae_listing_unique = FALSE) {
+
 
   if (is.null(population)) {
     if (length(meta$population) == 1) {
@@ -64,23 +66,56 @@ prepare_ae_forestly <- function(
     }
   }
 
+  if( is.null(parameter)){
+    parameters <- names(meta$parameter)
+
+    meta$parameter
+  }else{
+    parameters <- unlist(strsplit(parameter, ";"))
+  }
+
+  for(i in seq_along(parameters)){
+    para <- meta$parameter[[parameters[i]]]
+    if(is.null(para$var)){
+      para$var <- "AEDECOD"
+    }
+    if(is.null(para$soc)){
+      para$soc <- "AEBODSYS"
+    }
+    if(is.null(para$seq)){
+      para$seq <- sample(1e5:2e5, size = 1)
+    }
+    if(is.null(para$term1)){
+      para$term1 <- ""
+    }
+    if(is.null(para$term2)){
+      para$term2 <- ""
+    }
+    if(is.null(para$summ_row)){
+      para$summ_row <- ""
+    }
+    meta$parameter[[parameters[i]]] <- para
+  }
+
   res <- lapply(parameters, function(x) {
     # print(x)
     metalite.ae::prepare_ae_specific(meta,
       population = population, observation = observation,
       parameter = x,
-      components = "par",
+      components = components,
       reference_group = reference_group
     ) |>
       metalite.ae::extend_ae_specific_inference() |>
       collect_ae_listing(display = ae_listing_display) |>
-      format_ae_listing()
+      format_ae_listing(display_unique_records = ae_listing_unique)
   })
 
   ae_listing <- data.frame()
   for (i in 1:length(res)) {
-    res[[i]]$ae_listing$param <- res[[i]]$parameter
-    ae_listing <- rbind(ae_listing, res[[i]]$ae_listing)
+    if (nrow(res[[i]]$ae_listing) > 0){
+      res[[i]]$ae_listing$param <- res[[i]]$parameter
+      ae_listing <- rbind(ae_listing, res[[i]]$ae_listing)
+    }
   }
 
   # Arrange data frame
@@ -108,12 +143,19 @@ prepare_ae_forestly <- function(
     tmp
   }
 
-  name <- c("order", "name")
+  name <- name <- c("order", "name", "soc_name")
   info <- lapply(name, foo)
   names(info) <- name
   parameter_order <- unlist(Map(rep, x = parameters, each = attributes(info$order)$n))
   names(parameter_order) <- NULL
   parameter_order <- factor(parameter_order, levels = parameters)
+
+  # Display message if a specified-parameter is not included
+  if (any(!(parameters %in% unique(parameter_order)))){
+    warning(paste0('There is no record for the parameter "',
+                   parameters[!(parameters %in% unique(parameter_order))],
+                   '" to display.'))
+  }
 
   # Additional group information
   info1 <- do.call(data.frame, info)
@@ -123,7 +165,7 @@ prepare_ae_forestly <- function(
     meta = meta,
     population = population,
     observation = observation,
-    parameter = parameter,
+    parameter = paste(parameters, collapse = ";"),
     n = values$n,
     order = info$order,
     parameter_order = parameter_order,
@@ -133,6 +175,7 @@ prepare_ae_forestly <- function(
     diff = values$diff,
     n_pop = res[[1]]$n_pop,
     name = info$name,
+    soc_name = info$soc_name,
     ci_lower = values$ci_lower,
     ci_upper = values$ci_upper,
     p = values$p,

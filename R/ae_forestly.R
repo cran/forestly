@@ -19,8 +19,10 @@
 #' Display interactive forest plot
 #'
 #' @param outdata An `outdata` object created by [format_ae_forestly()].
+#' @param display_soc_toggle A boolean value to display SOC toggle button.
 #' @param filter A character value of the filter variable.
 #' @param width A numeric value of width of the table in pixels.
+#' @param max_page A numeric value of max page number shown in the table.
 #'
 #' @return An AE forest plot saved as a `shiny.tag.list` object.
 #'
@@ -33,22 +35,42 @@
 #'   meta_forestly(
 #'     dataset_adsl = adsl,
 #'     dataset_adae = adae,
-#'     population_term = "apat",
-#'     observation_term = "wk12"
 #'   ) |>
-#'     prepare_ae_forestly(parameter = "any;rel") |>
+#'     prepare_ae_forestly() |>
 #'     format_ae_forestly() |>
 #'     ae_forestly()
 #' }
-ae_forestly <- function(outdata, filter = c("prop", "n"), width = 1400) {
+
+ae_forestly <- function(outdata,
+                        display_soc_toggle = TRUE,
+                        filter = c("prop", "n"),
+                        width = 1400,
+                        max_page = NULL) {
   filter <- match.arg(filter)
   filter_range <- c(0, 100)
+
+  # `max_page` controls the maximum page number displayed in the interactive forest table.
+  # By default (`NULL`), it will display the counts that round up to the nearest hundred.
+  if (is.null(max_page)) {
+    max_page <- if (max(attr(outdata$tbl$name, "n")) <= 100) c(10, 25, 50, 100) else c(10, 25, 50, 100, ceiling(max(attr(outdata$tbl$name, "n")) / 100) * 100)
+  } else {
+    max_page <- if (max_page <= 100) c(10, 25, 50, 100) else c(10, 25, 50, 100, max_page)
+  }
 
   parameters <- unlist(strsplit(outdata$parameter, ";"))
   par_label <- vapply(parameters,
     function(x) metalite::collect_adam_mapping(outdata$meta, x)$label,
     FUN.VALUE = character(1)
   )
+
+  for (par in parameters[(!(parameters %in% unique(outdata$parameter_order)))]){
+    outdata$tbl <-
+      rbind(outdata$tbl, NA)
+    outdata$tbl$name <- ifelse(is.na(outdata$tbl$name), "No data to display", outdata$tbl$name)
+    outdata$tbl$parameter <-
+      factor(ifelse(is.na(outdata$tbl$parameter), par, as.character(outdata$tbl$parameter)),
+             levels(outdata$parameter_order))
+  }
 
   outdata$tbl$parameter <- factor(
     outdata$tbl$parameter,
@@ -66,7 +88,7 @@ ae_forestly <- function(outdata, filter = c("prop", "n"), width = 1400) {
   # Set default to be the first item
   default_param <- as.character(unique(outdata$tbl$parameter)[1])
 
-  random_id <- paste0("filter_ae_", sample(1:9999, 1), "|", default_param)
+  random_id <- paste0("filter_ae_", uuid::UUIDgenerate(), "|", default_param)
   filter_ae <- crosstalk::filter_select(
     id = random_id,
     label = "AE Criteria",
@@ -114,6 +136,8 @@ ae_forestly <- function(outdata, filter = c("prop", "n"), width = 1400) {
     tbl,
     columns = outdata$reactable_columns,
     columnGroups = outdata$reactable_columns_group,
+    hidden_item = paste0("'", outdata$hidden_column, "'", collapse = ", "),
+    soc_toggle = display_soc_toggle,
     width = width,
     details = function(index) {
       t_row <- outdata$tbl$name[index]
@@ -121,24 +145,62 @@ ae_forestly <- function(outdata, filter = c("prop", "n"), width = 1400) {
 
       t_details <- subset(
         outdata$ae_listing,
-        (toupper(outdata$ae_listing$Adverse_Event) %in% toupper(t_row)) &
-          (outdata$ae_listing$param == t_param)
+        ((toupper(outdata$ae_listing$Adverse_Event) %in% toupper(t_row)) &
+          (outdata$ae_listing$param == t_param)) |
+        ((toupper(outdata$ae_listing$SOC_Name) %in% toupper(t_row)) &
+           (outdata$ae_listing$param == t_param))
+      )
+
+      # Exclude 'param' column from t_details
+      t_details <- t_details[, !(names(t_details) %in% c("param", "SOC_Name"))]
+
+      # Get all labels from the un-subset data
+      listing_label <- get_label(outdata$ae_listing)
+
+      # Assign labels
+      t_details <- assign_label(
+        data = t_details,
+        var = names(t_details),
+        label = listing_label[match(names(t_details), names(listing_label))]
       )
 
       row.names(t_details) <- NULL
-      t_details[, !(names(t_details) == "param")] |>
-        # eval(collect_adam_mapping(outdata$meta, t_param)$`subset`)) |>
-        # & param == as.character(t_param))
-        reactable2(
-          width = width,
-          col_def = reactable::colDef(
-            header = function(value) gsub("_", " ", value, fixed = TRUE),
+
+      # Extract labels for use in column definitions
+      labels <- lapply(t_details, function(x) attr(x, "label"))
+
+      # Create named column definitions using the labels
+      col_defs <- stats::setNames(
+        lapply(names(t_details), function(name) {
+          # Use label from the list
+          label_name <- if(is.null(labels[[name]])) name else labels[[name]][[1]]
+          reactable::colDef(
+            header = label_name,  # Use header instead of name
             cell = function(value) format(value, nsmall = 1),
             align = "center",
             minWidth = 70
           )
-        )
+        }),
+        names(t_details)
+      )
+
+      # Create and return the reactable table for the nested view
+      reactable::reactable(
+        t_details,
+        columns = col_defs,
+        width = "100%", # Adjust width as needed
+        resizable = TRUE,
+        filterable = TRUE,
+        searchable = TRUE,
+        showPageSizeOptions = TRUE,
+        borderless = TRUE,
+        striped = TRUE,
+        highlight = TRUE
+      )
     },
+
+    pageSizeOptions = max_page,
+
     # Default sort variable
     defaultSorted = c("parameter", names(outdata$diff)),
     defaultSortOrder = "desc"

@@ -46,11 +46,9 @@
 #' adae <- forestly_adae[1:100,]
 #' meta_forestly(
 #'   dataset_adsl = adsl,
-#'   dataset_adae = adae,
-#'   population_term = "apat",
-#'   observation_term = "wk12"
+#'   dataset_adae = adae
 #' ) |>
-#'   prepare_ae_forestly(parameter = "any;rel")|>
+#'   prepare_ae_forestly()|>
 #'   format_ae_forestly()
 format_ae_forestly <- function(
     outdata,
@@ -107,6 +105,7 @@ format_ae_forestly <- function(
   tbl <- data.frame(
     parameter = outdata$parameter_order,
     name = outdata$name,
+    soc_name = outdata$soc_name,
     prop_fig = NA,
     diff_fig = NA,
     outdata$n[, 1:m_group],
@@ -226,6 +225,11 @@ format_ae_forestly <- function(
     name = reactable::colDef(
       header = "Adverse Events",
       minWidth = width_term, align = "right"
+    ),
+    soc_name = reactable::colDef(
+      header = "SOC Name",
+      minWidth = width_term, align = "right",
+      show = FALSE
     )
   )
 
@@ -316,11 +320,24 @@ format_ae_forestly <- function(
     col_prop_fig, col_diff_fig
   )
 
+  # column hidden
+  columns <- lapply(columns, function (x) {
+    if (!"show" %in% names(x)) {
+      x$show <- TRUE
+    }
+    return(x)
+  })
+
+  hidden_item <- names(columns)[(!names(columns) %in% "soc_name") & (sapply(columns, function(x) {return(!x$show)}))]
+
   # Create outdata
   outdata$tbl <- tbl
   outdata$reactable_columns <- columns
   outdata$reactable_columns_group <- columnGroups
   outdata$display <- display
+  outdata$fig_prop_color <- fig_prop_color
+  outdata$fig_diff_color <- fig_diff_color
+  outdata$hidden_column <- hidden_item
 
   outdata
 }

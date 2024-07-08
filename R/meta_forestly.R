@@ -21,11 +21,12 @@
 #' @param dataset_adsl ADSL source dataset.
 #' @param dataset_adae ADAE source dataset.
 #' @param population_term A character value of population term name.
+#' @param observation_term A character value of observation term name.
 #' @param population_subset An unquoted condition for selecting the
 #'   populations from ADSL dataset.
-#' @param observation_term A character value of observation term name.
 #' @param observation_subset An unquoted condition for selecting the
 #'   observations from ADAE dataset.
+#' @param treatment_group A character value of treatment group name.
 #' @param parameter_term A character value of parameter term name.
 #'
 #' @return A metalite object.
@@ -37,19 +38,21 @@
 #'   forestly_adsl,
 #'   forestly_adae,
 #'   population_term = "apat",
-#'   observation_term = "wk12"
+#'   observation_term = "safety",
+#'   parameter_term = "any;rel"
 #' )
 meta_forestly <- function(
     dataset_adsl,
     dataset_adae,
-    population_term,
-    population_subset = SAFFL == "Y",
-    observation_term,
-    observation_subset = SAFFL == "Y",
-    parameter_term = "any;rel;ser") {
+    population_term = "apat",
+    observation_term = "safety",
+    parameter_term = "any;rel",
+    population_subset,
+    observation_subset,
+    treatment_group = "TRTA") {
   meta <- metalite::meta_adam(
-    population = dataset_adsl,
-    observation = dataset_adae
+    population = as.data.frame(dataset_adsl),
+    observation = as.data.frame(dataset_adae)
   ) |>
     metalite::define_plan(plan = metalite::plan(
       analysis = "ae_forestly",
@@ -59,13 +62,13 @@ meta_forestly <- function(
     )) |>
     metalite::define_population(
       name = population_term,
-      group = "TRTA",
+      group = treatment_group,
       subset = !!rlang::enquo(population_subset),
       label = ""
     ) |>
     metalite::define_observation(
       name = observation_term,
-      group = "TRTA",
+      group = treatment_group,
       subset = !!rlang::enquo(observation_subset),
       label = ""
     )

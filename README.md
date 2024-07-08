@@ -2,7 +2,26 @@
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/Merck/forestly/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/Merck/forestly/actions/workflows/R-CMD-check.yaml)
+[![Codecov test coverage](https://codecov.io/gh/Merck/forestly/branch/main/graph/badge.svg)](https://app.codecov.io/gh/Merck/forestly?branch=main)
+[![CRAN status](https://www.r-pkg.org/badges/version/forestly)](https://cran.r-project.org/package=forestly)
+[![CRAN Downloads](https://cranlogs.r-pkg.org/badges/forestly)](https://cran.r-project.org/package=forestly)
 <!-- badges: end -->
+
+## Installation
+
+The easiest way to get forestly is to install from CRAN:
+
+```r
+install.packages("forestly")
+```
+
+Alternatively, to use a new feature or get a bug fix,
+you can install the development version of forestly from GitHub:
+
+```r
+# install.packages("remotes")
+remotes::install_github("Merck/forestly")
+```
 
 ## Overview
 
@@ -13,7 +32,7 @@ The forestly package creates interactive forest plots for clinical trial analysi
 - Efficacy analysis (future work)
   - Subgroup analysis
 
-<video src="https://user-images.githubusercontent.com/85646030/238364424-b93e8b04-5791-4c24-90ea-cfb7832442db.mp4" data-canonical-src="https://user-images.githubusercontent.com/85646030/238364424-b93e8b04-5791-4c24-90ea-cfb7832442db.mp4" controls="controls" muted="muted" class="d-block rounded-bottom-2 width-fit" style="max-height:640px;max-width:60%;">
+<video src="https://github.com/Merck/forestly/assets/129398183/2a645ac6-86f3-42c8-bcba-1970da916fae" data-canonical-src="https://github.com/Merck/forestly/assets/129398183/2a645ac6-86f3-42c8-bcba-1970da916fae" controls="controls" muted="muted" class="d-block rounded-bottom-2 width-fit" style="max-height:640px;max-width:60%;">
 
 </video>
 
@@ -37,9 +56,7 @@ library("forestly")
 
 meta_forestly(
   forestly_adsl,
-  forestly_adae,
-  population_term = "apat",
-  observation_term = "wk12"
+  forestly_adae
 ) |>
   prepare_ae_forestly(parameter = "any;rel;ser") |>
   format_ae_forestly() |>
