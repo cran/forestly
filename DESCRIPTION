@@ -1,6 +1,6 @@
 Package: forestly
 Title: Interactive Forest Plot
-Version: 0.1.1
+Version: 0.1.2
 Authors@R: c(
     person("Yilong", "Zhang", role = c("aut")),
     person("Benjamin", "Wang", email = "benjamin.wang@merck.com", role = c("aut", "cre")),
@@ -30,9 +30,9 @@ Suggests: covr, dplyr, knitr, r2rtf, rmarkdown, patchwork, testthat (>=
         3.0.0)
 VignetteBuilder: knitr
 Config/testthat/edition: 3
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2
 NeedsCompilation: no
-Packaged: 2024-07-03 17:05:03 UTC; wangben
+Packaged: 2025-01-09 18:45:06 UTC; wangben
 Author: Yilong Zhang [aut],
   Benjamin Wang [aut, cre],
   Yujie Zhao [aut],
@@ -43,4 +43,4 @@ Author: Yilong Zhang [aut],
   Merck & Co., Inc., Rahway, NJ, USA and its affiliates [cph]
 Maintainer: Benjamin Wang <benjamin.wang@merck.com>
 Repository: CRAN
-Date/Publication: 2024-07-08 19:40:02 UTC
+Date/Publication: 2025-01-10 16:20:14 UTC

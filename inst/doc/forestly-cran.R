@@ -8,6 +8,7 @@
 #  meta_forestly(
 #    dataset_adsl = forestly_adsl,
 #    dataset_adae = forestly_adae,
+#    parameter_term = "any;rel;ser",
 #    population_subset = SAFFL == "Y",
 #    observation_subset = SAFFL == "Y"
 #  ) |>
